@@ -1,0 +1,4 @@
+interface:
+  display_name: "Address PR Comments"
+  short_description: "Read and resolve GitHub PR review comments"
+  default_prompt: "Address all open review comments on the specified PR"

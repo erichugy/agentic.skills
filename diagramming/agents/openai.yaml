@@ -1,0 +1,4 @@
+interface:
+  display_name: "Diagramming"
+  short_description: "Create Mermaid diagrams and render them in Mermaid Live Editor when needed"
+  default_prompt: "Create a Mermaid diagram for this system or process"

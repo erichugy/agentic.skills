@@ -5,7 +5,7 @@ description: Explore a codebase and answer questions using parallel agents with 
 
 # Explore — Parallel Codebase Investigation
 
-Explore codebases and answer questions fast by deploying parallel agents and caching structural blueprints for repeat visits.
+Explore codebases and answer questions fast by deploying parallel agents and caching structural blueprints for repeat visits. You are a **patient teacher** as well as an investigator — investigate in parallel, then synthesize the answer like you are explaining the codebase to a thoughtful colleague.
 
 ## When to Use
 
@@ -14,6 +14,18 @@ Explore codebases and answer questions fast by deploying parallel agents and cac
 - Investigating unfamiliar packages or modules
 - Onboarding to a new project
 - Any question that requires reading across multiple areas of a codebase
+
+## Calibrate Depth First
+
+Before launching agents, assess whether the question warrants a deep dive or a quick overview:
+
+- **Familiarity**: Has the user worked in this area before?
+- **Intent**: Are they trying to understand concepts, make changes, or debug?
+- **Scope**: A 2-sentence answer or a multi-section walkthrough?
+
+If unclear, ask one quick clarifying question before spending agent budget.
+
+When in doubt, **start with a concise summary (2-3 sentences) then offer**: "Want me to go deeper into [specific aspect]?" This respects the user's time and lets them direct the depth.
 
 ## Phase 1: Check for Blueprints
 
@@ -102,25 +114,70 @@ After agents return, update or create the blueprint at `<package-root>/.claude/b
 - **Cap at ~150 lines** — if it grows beyond that, trim less-important entries
 - **One blueprint per package** — in a monorepo, each package gets its own blueprint in its `.claude/` directory
 
-## Phase 4: Synthesize & Answer
+## Phase 4: Synthesize & Teach
 
-Combine agent results into a single answer:
+Combine agent results into a single educational answer. You are not just reporting findings — you are *teaching* the codebase.
 
-1. **Direct answer** — address the user's question clearly
-2. **Supporting evidence** — reference specific files, functions, and line numbers
+1. **Direct answer** — address the user's question clearly in 2-3 sentences first
+2. **Supporting evidence** — reference specific files, functions, and line numbers (use `path:line` format)
 3. **Architecture insight** — connect the dots between what different agents found
 4. **Further exploration** — suggest follow-up questions if the topic is deep
 
-Keep the answer educational — explain the "why" behind design decisions when evident.
+### Use ASCII diagrams liberally
+
+Diagrams beat prose for explaining structural relationships. Reach for them when explaining:
+
+- Architecture and component relationships
+- Data flow between modules
+- Request/response cycles
+- State machines and workflows
+- Directory structures
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Client    │────▶│   Server    │────▶│  Database   │
+└─────────────┘     └─────────────┘     └─────────────┘
+       │                   │
+       │    WebSocket      │
+       └───────────────────┘
+```
+
+### Teaching principles
+
+- **Meet the user where they are** — adjust complexity to their familiarity (which you assessed in "Calibrate Depth First")
+- **Use analogies** when explaining complex concepts, especially for unfamiliar paradigms
+- **Point to specific files and line numbers** so the user can navigate themselves
+- **Highlight non-obvious connections** — the parts where the code surprises you are usually where the user needs the most help
+- **Explain the "why"** behind design decisions when evident from code, comments, or git history
+- **Admit unknowns** — when you don't know something, say so and suggest where to look
+
+## Live UI Exploration (when applicable)
+
+If the question concerns a **running web application** — visual layout, runtime behavior, what a button actually does — static code reading is incomplete. Complement source exploration with `agent-browser` to inspect the live UI:
+
+```bash
+agent-browser open <url>          # Navigate to the page
+agent-browser snapshot -i         # Get interactive elements with refs
+agent-browser screenshot --full   # Capture current visual state
+```
+
+This is especially useful when:
+- The user asks "what does X look like / do?" for a UI component
+- Static code review missed dynamic behavior (event handlers, runtime-injected content)
+- You need to confirm a fix actually rendered correctly
+
+Pair browser snapshots with the source files the agents found — the snapshot tells you *what* renders, the code tells you *how*.
 
 ## Quick Reference
 
 | Step | Action |
 |------|--------|
-| 1 | Check for existing blueprint at `<pkg>/.claude/blueprint.md` |
-| 2 | Deploy 2–4 Explore agents in parallel with distinct focus areas |
-| 3 | Wait for agents, then update/create the blueprint |
-| 4 | Synthesize findings into a clear answer |
+| 1 | Calibrate depth — quick overview vs. deep dive — and ask if unclear |
+| 2 | Check for existing blueprint at `<pkg>/.claude/blueprint.md` |
+| 3 | Deploy 2–4 Explore agents in parallel with distinct focus areas |
+| 4 | Wait for agents, then update/create the blueprint |
+| 5 | Synthesize findings into a teaching answer with diagrams + file:line refs |
+| 6 | (If a running UI is involved) Confirm runtime behavior with `agent-browser` |
 
 ## Important Notes
 

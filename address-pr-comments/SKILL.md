@@ -13,6 +13,17 @@ Read open review threads on GitHub PRs, implement the requested changes, and res
 /address-pr-comments <pr-number> [pr-number...]
 ```
 
+## Reviewer modes
+
+Two operating modes depending on who is reviewing the PR:
+
+| Mode | When | Loop strategy |
+|------|------|---------------|
+| **Standard** (default) | Human reviewers, mixed reviewers | One pass: triage → fix → resolve → push. Stop when threads are resolved. |
+| **Iterative bot mode** | A bot reviewer with a confidence/quality score (e.g., Greptile, Vercel Agent) is the gating reviewer | Loop the full process until the bot reports a clean score (e.g., 5/5) **and** zero unresolved comments, capped at 5 iterations. See the [Iterative bot mode](#iterative-bot-mode-eg-greptile) section. |
+
+If the user says "iterate until Greptile is happy" / "loop until 5/5" / "until the bot is clean", use iterative bot mode. Otherwise use standard.
+
 ## Process
 
 ### 1. Fetch open review threads
@@ -178,6 +189,76 @@ gh api graphql -f query='mutation {
 
 Then resolve the thread.
 
+### 6b. Iterative bot mode (e.g., Greptile)
+
+If running in **iterative bot mode**, wrap the entire process (steps 1-6) in a loop until the bot reviewer reports a clean state.
+
+**Triggers** (any of):
+- User says "iterate until Greptile is happy", "loop until 5/5", "until the bot is clean"
+- The PR is gated on a bot reviewer with a confidence/quality score
+- The user names a bot reviewer explicitly (Greptile, Vercel Agent, etc.)
+
+#### Loop protocol
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│ A. Push & wait for bot review                                        │
+│    git push                                                          │
+│    gh pr checks <PR> --watch       # block until bot check completes │
+│                                                                       │
+│ B. Fetch bot review                                                   │
+│    gh api repos/{owner}/{repo}/pulls/<PR>/reviews                    │
+│    → find latest review from greptile-apps[bot] (or other bot)       │
+│    → parse confidence score (e.g., "3/5", "5/5") from review body    │
+│    → fetch unresolved inline comments via reviewThreads GraphQL      │
+│                                                                       │
+│ C. Exit conditions (stop if ANY)                                      │
+│    - Confidence == max (e.g., 5/5) AND zero unresolved comments      │
+│    - Iteration count >= 5 (cap to avoid runaway loops)                │
+│    - User intervention requested                                      │
+│                                                                       │
+│ D. Otherwise, run steps 1-6 of the standard process                   │
+│    → triage, no-op check, multi-agent fix, resolve threads           │
+│                                                                       │
+│ E. Increment iteration; go back to A.                                 │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+#### Parsing confidence scores
+
+Bot reviews typically include a score in the review body. Use a regex search like `/(\d)\s*\/\s*5/` to extract `N/5` patterns. If multiple appear, use the last one (final summary). If no score is parseable, treat the bot's "Approved" review event as a clean signal and "Changes requested" as not-clean.
+
+#### Per-iteration commit message
+
+Use a descriptive commit message that includes the iteration number:
+
+```
+fix(<scope>): address <bot> review feedback (iteration N)
+```
+
+#### Output format (iterative mode)
+
+After the loop exits, replace the standard Report (step 7) with the iterative summary:
+
+```
+## PR #<N>: <title> — Iterative <bot> mode
+
+| Field             | Value      |
+|-------------------|------------|
+| Iterations        | N          |
+| Final confidence  | X/5        |
+| Comments resolved | M          |
+| Remaining         | K          |
+
+Status: ✓ Clean / ⚠ Stopped at iteration cap / ✗ User intervention
+
+Remaining issues (if K > 0):
+  - <path>:<line> — "<comment excerpt>"
+  - ...
+```
+
+If the loop exited due to the iteration cap, list the remaining issues and surface a recommendation: a remaining comment after 5 iterations is usually a false positive, a design disagreement, or a structural change that needs human input — flag it for the user rather than churning further.
+
 ### 7. Report
 
 Summarize what was done:
@@ -267,4 +348,5 @@ This step is the feedback loop that makes the system get smarter over time. PR r
 | Security Review | `/review-pr` checklists, `/coding-conventions`, language skill |
 | Style Enforcement | Language skill, `/coding-conventions`, `/code-comments`, `/simplify`, `/file-naming` |
 | Orchestration | `/multi-agent` (worktrees, wave dispatch, review loop) |
+| Bot-reviewer Loop | `gh pr checks --watch`, confidence-score parsing, iteration cap (see [Iterative bot mode](#6b-iterative-bot-mode-eg-greptile)) |
 | Self-Improvement | `/update-skills` (analyze patterns, propose skill/config updates) |

@@ -125,7 +125,6 @@ Phase 4: PR Creation
 | `/knip` | Find and remove unused code/dependencies |
 | `/rams` | Accessibility and visual design review |
 | `/simplify` | Simplify recently modified code |
-| `/reclaude` | Refactor CLAUDE.md for progressive disclosure |
 | `/sync-containers` | Propagate skill/config changes to Docker sandboxes |
 | `/create-claude-playground` | Create an isolated Docker sandbox for autonomous Claude Code |
 | `/find-skills` | Discover installable skills |

@@ -14,4 +14,5 @@ This repo holds markdown-first skills and supporting reference files. The initia
 
 - this repo is public by design
 - it should avoid private prompts, secrets, logs, or machine-local state
+- Botpress-specific skills (`adk/`, `adk-old/`) are listed in `.gitignore` and kept local-only — never commit them here
 

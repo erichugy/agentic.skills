@@ -1,6 +1,6 @@
 ---
 name: rust
-description: Rust coding conventions. Apply when writing, reviewing, or refactoring any .rs code. Covers ownership, error handling, naming, module organization, and idiomatic patterns.
+description: Rust coding conventions. Apply when writing, reviewing, or refactoring any .rs code. Covers ownership, error handling, casing, module organization, and idiomatic patterns. For symbol naming principles (predicates, enum-variant naming, generic-verb smells, closed-set values as named constants), see /naming.
 ---
 
 # Rust Conventions
@@ -9,7 +9,9 @@ Apply these when writing, reviewing, or refactoring Rust code.
 
 **Always check for project-specific overrides first** — look for `AGENTS.md` or `CLAUDE.md` in the repo. Project rules override these defaults.
 
-## Naming
+For cross-cutting symbol naming (predicates as questions, narrowing-predicate target naming, enum-variant naming, generic-verb smells, promoting closed-set values into named constants), see `/naming`. The casing table below is the Rust-specific layer on top of those principles.
+
+## Casing
 
 | Element | Convention | Example |
 |---------|-----------|---------|

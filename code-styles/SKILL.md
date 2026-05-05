@@ -9,6 +9,8 @@ This is the **master index** of all coding style skills. Planners and orchestrat
 
 This file stays an **index**, not a duplicate ruleset. Cross-language design defaults and the "greenfield vs existing repo" operating mode live in `/coding-conventions`. Language-specific expression of those rules lives in the language skills such as `/typescript`.
 
+If work changes public module boundaries, barrels, contract ownership, aliases, or folder APIs, always include `/coding-conventions` and `/file-naming` alongside the language skill. Those refactors fail more often on ownership and import-surface mistakes than on implementation syntax.
+
 ## How to Use This Index
 
 1. Identify the **languages** and **frameworks** involved in the task
@@ -44,6 +46,7 @@ This file stays an **index**, not a duplicate ruleset. Cross-language design def
 
 | Skill | Applies When | Key Focus |
 |-------|-------------|-----------|
+| `/naming` | Introducing or renaming any symbol — predicates, variants, types, constants | Names answer the question, narrow predicates target the variant, unions own the concept, generic verbs avoided, closed sets become named domain constants |
 | `/file-naming` | Creating files/folders, refactoring structure | Names must reveal purpose — `exports/tables.ts` not `utils.ts` |
 | `/coding-conventions` | All code — language-agnostic core rules | Error handling, input validation, resource lifecycle, race conditions |
 | `/code-comments` | Writing or reviewing comments | Conventional Comments, "only the why", labels (TODO, FIXME, NOTE) |
@@ -55,19 +58,21 @@ This file stays an **index**, not a duplicate ruleset. Cross-language design def
 
 | Task Type | Required Skills | Optional Skills |
 |-----------|----------------|-----------------|
-| TypeScript feature | `/typescript`, `/coding-conventions`, `/file-naming` | `/solid`, `/composition`, design patterns |
-| React UI work | `/react`, `/typescript`, `/coding-conventions` | `/file-naming` |
-| Rust feature | `/rust`, `/coding-conventions`, `/file-naming` | `/solid`, design patterns |
-| API endpoint | `/typescript`, `/coding-conventions` | `/strategy-pattern`, `/factory-pattern` |
-| Refactor | `/solid`, `/composition`, `/coding-conventions`, `/simplify` | `/file-naming`, design patterns |
-| Code review | `/coding-conventions`, `/code-comments`, language skill, framework skill | Design patterns as relevant |
+| TypeScript feature | `/typescript`, `/coding-conventions`, `/naming`, `/file-naming` | `/solid`, `/composition`, design patterns |
+| React UI work | `/react`, `/typescript`, `/coding-conventions`, `/naming` | `/file-naming` |
+| Rust feature | `/rust`, `/coding-conventions`, `/naming`, `/file-naming` | `/solid`, design patterns |
+| API endpoint | `/typescript`, `/coding-conventions`, `/naming` | `/strategy-pattern`, `/factory-pattern` |
+| Contract/schema/boundary refactor | `/typescript`, `/coding-conventions`, `/naming`, `/file-naming`, `/simplify` | `/solid`, `/composition` |
+| Refactor | `/solid`, `/composition`, `/coding-conventions`, `/naming`, `/simplify` | `/file-naming`, design patterns |
+| Naming-only refactor (renames, predicate cleanup, variant restructuring) | `/naming`, language skill, `/coding-conventions` | `/file-naming`, `/simplify` |
+| Code review | `/coding-conventions`, `/naming`, `/code-comments`, language skill, framework skill | Design patterns as relevant |
 
 ### By agent role
 
 | Agent Role | Skills to Assign |
 |------------|-----------------|
-| **Worker/Implementer** | Language skill + framework skill + `/coding-conventions` + `/file-naming` + relevant design patterns |
-| **Reviewer** | Language skill + framework skill + `/coding-conventions` + `/code-comments` + `/simplify` |
+| **Worker/Implementer** | Language skill + framework skill + `/coding-conventions` + `/naming` + `/file-naming` + relevant design patterns |
+| **Reviewer** | Language skill + framework skill + `/coding-conventions` + `/naming` + `/code-comments` + `/simplify` |
 | **Security Reviewer** | `/coding-conventions` (input validation, error handling sections) |
-| **Style Enforcer** | Language skill + `/coding-conventions` + `/code-comments` + `/file-naming` + `/simplify` |
-| **Architect/Planner** | `/design-patterns` + `/solid` + `/composition` + `/file-naming` |
+| **Style Enforcer** | Language skill + `/coding-conventions` + `/naming` + `/code-comments` + `/file-naming` + `/simplify` |
+| **Architect/Planner** | `/design-patterns` + `/solid` + `/composition` + `/naming` + `/file-naming` |

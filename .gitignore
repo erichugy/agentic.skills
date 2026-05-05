@@ -1,0 +1,15 @@
+# Botpress-specific skills - kept locally only, never published
+adk/
+adk-old/
+
+# OS / editor
+.DS_Store
+*.swp
+*.swo
+
+# Dependency caches
+node_modules/
+
+# Local backup artifacts
+*.bak
+backup/

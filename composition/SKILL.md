@@ -135,6 +135,8 @@ type ClientModule = {
 
 This keeps each variant assembled from stable parts and makes additions mostly additive instead of requiring edits across a large coordinator.
 
+Use this especially when transport-specific concerns are bleeding into workflow code. If a feature has concepts like init payloads, health-check metadata, replay builders, and persistence adapters, compose those as separate boundary-owned modules instead of letting one handler coordinate every special case.
+
 ### 5. Parameterization over Subtyping
 
 If the variation is "same workflow, different rule", pass the rule in:
@@ -183,3 +185,5 @@ type User = { id: string; name: string } & Timestamped & SoftDeletable
 - Is there a small, stable contract for adding the next variant?
 - Are raw protocol or config details leaking too far past the boundary?
 - Would a new implementation mostly add files, or would it require editing many unrelated modules?
+- Does each module own one seam clearly: schema, metadata builder, adapter, persistence mapper, or workflow coordinator?
+- If a rename or behavior change happens, can you update one boundary module instead of chasing the same concept through handlers, clients, and docs?

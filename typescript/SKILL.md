@@ -1,6 +1,6 @@
 ---
 name: typescript
-description: TypeScript and JavaScript coding conventions. Apply when writing, reviewing, or refactoring any .ts, .tsx, .js, or .jsx code. Covers strict types, Zod validation, naming, imports, and type safety rules.
+description: TypeScript and JavaScript coding conventions. Apply when writing, reviewing, or refactoring any .ts, .tsx, .js, or .jsx code. Covers strict types, Zod validation, casing, imports, and type safety rules. For symbol naming principles (predicates, variants, domain constants), see /naming. For filesystem layout, see /file-naming.
 ---
 
 # TypeScript Conventions
@@ -11,18 +11,20 @@ For deeper rationale and examples behind the Jane Street/OCaml-inspired rules, s
 
 **Always check for project-specific overrides first** — look for `AGENTS.md` or `CLAUDE.md` in the repo. Project rules override these defaults.
 
+For cross-cutting symbol naming (predicates as questions, narrowing-predicate target naming, union-vs-variant naming, generic-verb smells, closed-set values as domain constants), see `/naming`. The casing table below is the TypeScript-specific layer on top of those principles.
+
 ## Strict Mode
 
 Always enable strict mode in `tsconfig.json`. Never use `// @ts-ignore` or `// @ts-nocheck`.
 
-## Naming
+## Casing
 
 | Element | Convention | Example |
 |---------|-----------|---------|
 | Functions, variables, parameters | `camelCase` | `getUserProfile` |
 | Types, classes, enums | `PascalCase` | `UserProfile` |
 | Private class members | Leading underscore | `_internalState` |
-| Constants (true constants) | `UPPER_SNAKE_CASE` | `MAX_RETRY_COUNT` |
+| Constants (true constants and schema-derived enum objects) | `UPPER_SNAKE_CASE` | `MAX_RETRY_COUNT`, `PERSISTENCE_WARNING_SCOPE` |
 | Files | `kebab-case` or match export name | `user-profile.ts` |
 
 ## Types over Interfaces
@@ -56,6 +58,8 @@ Always add return types on exported functions. Inference is fine for small inter
 
 ## Discriminated Unions over Flag Combinations
 
+For naming the union, its variants, and any narrowing type guards, see `/naming` — the union owns the concept name, variants take qualifiers, and guards are named after what they narrow to.
+
 Model variants as tagged unions and exhaustively handle them:
 
 ```typescript
@@ -79,6 +83,21 @@ function renderResult(result: SyncResult): string {
   }
 }
 ```
+
+When a closed set of values drives branching, persistence, or error reporting, define it once as a schema-backed domain value and reuse it everywhere:
+
+```typescript
+export const PersistenceWarningScopeSchema = z.enum(['job', 'result'])
+export const PERSISTENCE_WARNING_SCOPE = PersistenceWarningScopeSchema.enum
+export type PersistenceWarningScope = z.infer<typeof PersistenceWarningScopeSchema>
+```
+
+This prevents review churn from ad hoc string literals drifting across handlers, schemas, and telemetry tags.
+
+Keep the three roles visually distinct:
+- `FooSchema` for the parser/validator
+- `type Foo` for the inferred TypeScript type
+- `FOO` for the runtime enum-like value object produced from `.enum`
 
 ## Import Ordering
 
@@ -121,6 +140,8 @@ const user = UserSchema.parse(data)
 
 Use `.parse()` when invalid data should fail fast. Use `.safeParse()` when you need a fallback path.
 
+For boundary-owned shapes, let the schema name reflect the domain behavior instead of the transport history. Prefer `InitMessageRequestBodySchema` over a stale name like `BootstrapMessageRequestBodySchema` once the meaning is clearly "init payload".
+
 ## No `as` Type Assertions
 
 `as` bypasses type checking. Use Zod or type guards instead:
@@ -157,6 +178,19 @@ This is the TypeScript analogue of labeled arguments: it makes call sites readab
 - Prefer factory/parser functions at boundaries instead of exposing raw unchecked shapes
 - Use branded types when two values are both `string` or `number` but mean different things (`UserId` vs `SessionId`)
 - Prefer `readonly` arrays and object properties by default unless mutation is required for performance or framework constraints
+- Keep bootstrap-only constants separate from runtime-loaded config. Code that loads config must not depend on the config value it is still trying to read
+- Give each important boundary shape one clear owning module. Callers should import the contract from that owner instead of recreating local variants
+- When a contract changes, prefer a deliberate migration path over temporary duplicate shapes with nearly identical names
+- If you need to rename a boundary type or schema, rename the value, type, parser, and file together so transport-history names do not linger beside domain-accurate names
+- If you split a boundary into helper files such as `types.ts`, `result.ts`, and `index.ts`, update the barrel and all internal imports in the same change. Helper modules should not accidentally become the new public owner for contract types
+- If consumers import a boundary barrel and still need sibling deep imports from the same folder, either promote those symbols into the barrel or stop treating that barrel as the public boundary
+- If a file primarily exports schemas, inferred types, and enum-like constants for one concept folder, prefer a role name like `types.ts` or `schema.ts`. Do not use duplicated names like `user/user.ts` or `signal/signal.ts` unless the file also owns the main behavior for that concept
+
+## Alias and Import Refactors
+
+- Before switching code to a path alias, verify `tsconfig` exposes the form callers need. If consumers import both `@foo` and `@foo/bar`, the config usually needs both the bare alias and the wildcard alias
+- After moving or splitting contracts, run `rg` on old import paths and a full `tsc` pass before considering the refactor complete
+- Import cleanup must preserve ownership. Never pull a symbol from a different layer just because another import from that layer already exists
 
 ## No `unknown` (Except Catch Blocks)
 
@@ -168,6 +202,13 @@ This is the TypeScript analogue of labeled arguments: it makes call sites readab
 - Use custom error classes at meaningful boundaries
 - Handle specific error types first
 - Log failures with context, then rethrow or map to a user-safe error
+
+## Contract Review Checklist
+
+- Does this boundary shape have one obvious owner?
+- Are branching values modeled once as shared domain values rather than repeated strings?
+- Will the next caller import the same schema/type, or are we encouraging local copies?
+- If this contract changes next month, is there one migration point or many?
 
 ## Nullish Operators
 

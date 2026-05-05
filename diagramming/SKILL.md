@@ -17,6 +17,8 @@ In the Codex desktop app, Mermaid fenced blocks can render directly in the respo
 - "visualize this process"
 - "sequence diagram", "state machine", "ERD", "dependency graph"
 - any request that is easier to understand visually than as prose
+- architecture-heavy PRs or design reviews where recent churn suggests boundary confusion
+- changes that introduce or rename important seams such as runtime config, persistence, transport adapters, or failure-routing paths
 
 ## Workflow
 
@@ -29,6 +31,21 @@ In the Codex desktop app, Mermaid fenced blocks can render directly in the respo
    - Default: return a Mermaid fenced block in the chat response.
    - If the user wants a rendered browser view: try Mermaid Live Editor.
    - If browser automation is unavailable or fails: return the raw Mermaid and tell the user to open the editor link.
+
+## Proactive Use in Reviews
+
+Do not wait for the user to explicitly ask for a diagram when the problem is clearly architectural.
+
+Add a small diagram proactively when:
+- a PR changes multiple boundaries in one flow
+- reviewers are likely to ask "what calls what now?" or "where does this failure go?"
+- a rename or refactor changes ownership across modules
+- prose is starting to describe two or more interacting layers
+
+Preferred defaults:
+- use a `flowchart` for ownership/boundary maps
+- use a `sequenceDiagram` for request, retry, or failure-routing paths
+- keep it to 5-10 nodes/messages unless the user explicitly wants depth
 
 ## Diagram Selection
 

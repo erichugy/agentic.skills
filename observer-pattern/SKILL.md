@@ -13,6 +13,7 @@ Decouple producers from consumers by allowing objects to subscribe to events wit
 - The producer shouldn't know or care about its consumers
 - You need loose coupling between modules (e.g., "user signed up" triggers welcome email, analytics, onboarding — none should know about each other)
 - Building plugin systems or middleware chains
+- Emitting structured operational events such as script failures, persistence warnings, or report-generation failures without coupling workflow code to one telemetry backend
 
 ## TypeScript Implementation
 
@@ -107,6 +108,16 @@ impl<T> EventBus<T> {
 
 ## Critical Rules
 
+### Type Operational Events Like Domain Events
+
+If the event is important enough to drive alerts, dashboards, or review feedback, give it the same rigor as product-domain events:
+- define event names and scopes once
+- prefer typed payloads over loosely assembled tag maps
+- promote repeated boundaries like `top_level` or `persistence_sink` into shared constants or schema-backed enums
+- keep one helper responsible for mapping domain failures into telemetry events
+
+This avoids repeated string drift across scripts, sinks, and observability adapters.
+
 ### Always Clean Up Subscriptions
 
 Every `subscribe`/`on` call must have a corresponding unsubscribe, especially in:
@@ -149,3 +160,4 @@ if (listeners.size >= MAX_LISTENERS) {
 - **God event bus** — one bus for everything. Scope buses by domain.
 - **Events for synchronous control flow** — if you need a return value, use a function call, not an event.
 - **String-typed events without a type map** — leads to typos and no type safety.
+- **Hand-built telemetry tags in every caller** — centralize event shaping so producers emit one domain event instead of rebuilding observability payloads ad hoc.
